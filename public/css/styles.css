@@ -1,0 +1,1184 @@
+/* =============================================================================
+   styles.css
+   Fleet Performance Dashboard — Master Stylesheet
+   =============================================================================
+
+   Contents:
+     1.  CSS Variables          — design tokens (colours, radii, fonts)
+     2.  Reset & Base           — box-sizing, body, scrollbars
+     3.  Upload Screen          — drop zone, file list, upload card
+     4.  Buttons                — primary, icon, download variants
+     5.  Topbar & Navigation    — sticky header, brand, client tabs
+     6.  Dashboard Layout       — content wrapper, two-column grid
+     7.  KPI Cards              — metric tiles and change indicators
+     8.  Chart Cards            — card shell and chart containers
+     9.  Data Tables            — th, td, badges, row hover
+    10.  Violation Cards        — reference guide grid
+    11.  Global Filter Bar      — fleet / vehicle / compare toggle
+    12.  Compare Mode           — vehicle tags, add button, dropdown
+    13.  Date Range Picker      — from/to inputs and buttons
+    14.  Executive Summary      — summary block, notes textarea, edit mode
+    15.  Warning Banner         — data quality alerts
+    16.  Toast Notifications    — success / warn / error / info toasts
+    17.  Loading Overlay        — full-screen spinner
+    18.  PDF / Print Overlay    — progress overlay during PDF generation
+    19.  Print Dialog           — Office-style print settings modal
+    20.  Score Band Utilities   — badge colours tied to SCORE_BANDS
+    21.  Print Styles           — @media print overrides (!important allowed here)
+    22.  Responsive Overrides   — tablet, mobile, large-screen breakpoints
+   ============================================================================= */
+
+
+/* =============================================================================
+   1. CSS VARIABLES
+   Design tokens — change a value here and it updates everywhere.
+   ============================================================================= */
+
+:root {
+  /* Backgrounds */
+  --bg       : #0f1117;
+  --surface  : #1a1d27;
+  --surface2 : #22263a;
+
+  /* Borders */
+  --border   : rgba(255, 255, 255, 0.08);
+  --border2  : rgba(255, 255, 255, 0.14);
+
+  /* Text */
+  --text     : #f0f3fb;
+  --text2    : #e3e9f8;
+  --text3    : #cfd8ee;
+
+  /* Brand colours */
+  --accent   : #4f8ef7;
+  --accent2  : #2563d4;
+
+  /* Semantic colours — match SCORE_BANDS in constants.js */
+  --red      : #e05353;   /* high risk   */
+  --amber    : #e09545;   /* moderate    */
+  --green    : #3db87a;   /* low risk    */
+  --teal     : #2ec4b6;
+  --pink     : #d45b9f;
+
+  /* Shape */
+  --radius   : 10px;
+  --radius-lg: 14px;
+}
+
+
+/* =============================================================================
+   2. RESET & BASE
+   ============================================================================= */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background  : var(--bg);
+  color       : var(--text);
+  font-family : 'Segoe UI', system-ui, sans-serif;
+  font-size   : 15px;
+  min-height  : 100vh;
+}
+
+/* Webkit scrollbars — styled to match the dark theme */
+::-webkit-scrollbar               { width: 6px; height: 6px; }
+::-webkit-scrollbar-track         { background: var(--surface2); border-radius: 10px; }
+::-webkit-scrollbar-thumb         { background: var(--border2);  border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover   { background: var(--accent); }
+
+/* Firefox scrollbar */
+* { scrollbar-width: thin; scrollbar-color: var(--border2) var(--surface2); }
+
+/* Dark calendar picker icon */
+::-webkit-calendar-picker-indicator {
+  background-color : #22263a;
+  border-radius    : 4px;
+  padding          : 2px;
+  filter           : invert(0.8);
+  cursor           : pointer;
+}
+
+
+/* =============================================================================
+   3. UPLOAD SCREEN
+   ============================================================================= */
+
+#uploadScreen {
+  min-height      : 100vh;
+  display         : flex;
+  flex-direction  : column;
+  align-items     : center;
+  justify-content : center;
+  padding         : 2rem;
+}
+
+.logo-1 {
+  width: 300px;
+  height: 300px;
+  margin-bottom: 1rem;
+  object-fit: cover;
+  border-radius: 50%;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.logo { 
+  width: 150px; 
+  height: 120px; 
+  margin-bottom: 1rem;
+  object-fit: cover;
+  border-radius: 50%;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.upload-logo {
+  font-size      : 13px;
+  letter-spacing : .15em;
+  color          : var(--text3);
+  text-transform : uppercase;
+  margin-bottom  : 2.5rem;
+}
+.upload-logo span { color: var(--accent); }
+
+.upload-card {
+  background    : var(--surface);
+  border        : 1px solid var(--border2);
+  border-radius : var(--radius-lg);
+  padding       : 3rem 2.5rem;
+  max-width     : 540px;
+  width         : 100%;
+  text-align    : center;
+}
+
+.upload-card h1 {
+  font-size     : 22px;
+  font-weight   : 600;
+  margin-bottom : 8px;
+}
+
+.upload-card p {
+  color         : var(--text2);
+  font-size     : 13px;
+  line-height   : 1.6;
+  margin-bottom : 2rem;
+}
+
+/* Drag-and-drop zone */
+.drop-zone {
+  border         : 1.5px dashed var(--border2);
+  border-radius  : var(--radius);
+  padding        : 2rem 1.5rem;
+  cursor         : pointer;
+  transition     : border-color .2s, background .2s;
+  margin-bottom  : 1rem;
+  position       : relative;
+}
+.drop-zone:hover,
+.drop-zone.over {
+  border-color : var(--accent);
+  background   : rgba(79, 142, 247, .05);
+}
+.drop-zone input {
+  position : absolute;
+  inset    : 0;
+  opacity  : 0;
+  cursor   : pointer;
+  width    : 100%;
+}
+
+.drop-icon { font-size: 28px; margin-bottom: 8px; }
+
+.drop-text       { color: var(--text2); font-size: 13px; }
+.drop-text strong { color: var(--accent); }
+
+/* File list rows */
+.file-list { margin-top: 1rem; text-align: left; }
+
+.file-item {
+  display       : flex;
+  align-items   : center;
+  gap           : 8px;
+  background    : var(--surface2);
+  border-radius : var(--radius);
+  padding       : 8px 12px;
+  margin-bottom : 6px;
+  font-size     : 12px;
+}
+
+.file-item-name {
+  color         : var(--text);
+  flex          : 1;
+  min-width     : 0;
+  overflow      : hidden;
+  text-overflow : ellipsis;
+  white-space   : nowrap;
+}
+
+.file-item-client-input,
+.file-item-month-input {
+  background    : var(--surface);
+  border        : 1px solid var(--border2);
+  border-radius : 6px;
+  color         : var(--text);
+  padding       : 5px 8px;
+  font-size     : 12px;
+  outline       : none;
+}
+.file-item-client-input { flex: 0 0 160px; }
+.file-item-month-input  { flex: 0 0 130px; cursor: pointer; }
+.file-item-client-input:focus,
+.file-item-month-input:focus  { border-color: var(--accent); }
+.file-item-client-input::placeholder,
+.file-item-month-input::placeholder { color: var(--text3); }
+
+.file-item-remove {
+  background  : none;
+  border      : none;
+  color       : var(--text3);
+  cursor      : pointer;
+  font-size   : 16px;
+  padding     : 0 4px;
+  flex-shrink : 0;
+}
+.file-item-remove:hover { color: var(--red); }
+
+
+/* =============================================================================
+   4. BUTTONS
+   ============================================================================= */
+
+/* Primary action button (Generate Dashboard) */
+.btn-primary {
+  background   : var(--accent);
+  color        : #fff;
+  border       : none;
+  border-radius: var(--radius);
+  padding      : 11px 24px;
+  font-size    : 14px;
+  font-weight  : 500;
+  cursor       : pointer;
+  transition   : background .2s;
+  white-space  : nowrap;
+}
+.btn-primary:hover    { background: var(--accent2); }
+.btn-primary:disabled { opacity: .4; cursor: not-allowed; }
+
+/* Icon button — used in the topbar */
+.btn-icon {
+  background    : none;
+  border        : 1px solid var(--border2);
+  border-radius : var(--radius);
+  color         : var(--text2);
+  padding       : 6px 12px;
+  font-size     : 12px;
+  cursor        : pointer;
+  transition    : all .15s;
+  display       : flex;
+  align-items   : center;
+  gap           : 6px;
+  white-space   : nowrap;
+}
+.btn-icon:hover { border-color: var(--accent); color: var(--accent); }
+.btn-icon svg   { width: 14px; height: 14px; fill: currentColor; }
+
+/* Download / action buttons in the report header */
+.btn-download {
+  display       : flex;
+  align-items   : center;
+  gap           : 6px;
+  padding       : 8px 16px;
+  border-radius : var(--radius);
+  font-size     : 12px;
+  font-weight   : 500;
+  cursor        : pointer;
+  transition    : all .2s;
+  border        : 1px solid;
+  white-space   : nowrap;
+}
+
+.btn-export {
+  background   : rgba(61, 184, 122, .1);
+  color        : var(--green);
+  border-color : rgba(61, 184, 122, .3);
+}
+.btn-export:hover { background: rgba(61, 184, 122, .2); }
+
+.btn-pdf {
+  background   : rgba(224, 83, 83, .1);
+  color        : var(--red);
+  border-color : rgba(224, 83, 83, .3);
+}
+.btn-pdf:hover { background: rgba(224, 83, 83, .2); }
+
+
+/* =============================================================================
+   5. TOPBAR & NAVIGATION
+   ============================================================================= */
+
+#dashboard { display: none; }   /* shown by JS after files are loaded */
+
+.topbar {
+  background      : var(--surface);
+  border-bottom   : 1px solid var(--border);
+  padding         : 0 1.5rem;
+  height          : 56px;
+  display         : flex;
+  align-items     : center;
+  justify-content : space-between;
+  position        : sticky;
+  top             : 0;
+  z-index         : 100;
+}
+
+.topbar-left {
+  display    : flex;
+  align-items: center;
+  gap        : 1rem;
+  overflow-x : auto;
+}
+
+.topbar-brand {
+  font-size      : 13px;
+  font-weight    : 600;
+  letter-spacing : .08em;
+  color          : var(--text2);
+  text-transform : uppercase;
+  white-space    : nowrap;
+}
+.topbar-brand span { color: var(--accent); }
+
+.topbar-right {
+  display     : flex;
+  align-items : center;
+  gap         : 8px;
+  flex-shrink : 0;
+}
+
+/* Client tab bar */
+.client-tabs { display: flex; gap: 4px; }
+
+.ctab {
+  padding       : 5px 14px;
+  border-radius : 6px;
+  font-size     : 12px;
+  font-weight   : 500;
+  cursor        : pointer;
+  border        : 1px solid transparent;
+  color         : var(--text2);
+  transition    : all .15s;
+  white-space   : nowrap;
+}
+.ctab:hover   { background: var(--surface2); color: var(--text); }
+.ctab.active  { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+
+/* =============================================================================
+   6. DASHBOARD LAYOUT
+   ============================================================================= */
+
+.content {
+  padding   : 1.5rem;
+  max-width : 1400px;
+  margin    : 0 auto;
+}
+
+.report-header {
+  display         : flex;
+  align-items     : flex-start;
+  justify-content : space-between;
+  margin-bottom   : 1.5rem;
+  gap             : 1rem;
+  flex-wrap       : wrap;
+}
+.report-header-left h2 { font-size: 18px; font-weight: 600; }
+.report-header-left p  { color: var(--text2); font-size: 12px; margin-top: 4px; }
+.report-header-right   { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* Two-column chart grid */
+.grid-2 {
+  display               : grid;
+  grid-template-columns : 1fr 1fr;
+  gap                   : 1rem;
+  margin-bottom         : 1rem;
+}
+
+
+/* =============================================================================
+   7. KPI CARDS
+   ============================================================================= */
+
+.kpi-grid {
+  display               : grid;
+  grid-template-columns : repeat(auto-fit, minmax(148px, 1fr));
+  gap                   : 10px;
+  margin-bottom         : 1.5rem;
+}
+
+.kpi {
+  background    : var(--surface);
+  border        : 1px solid var(--border);
+  border-radius : var(--radius);
+  padding       : 1rem;
+}
+
+.kpi-label {
+  font-size      : 12px;
+  color          : var(--text2);
+  text-transform : uppercase;
+  letter-spacing : .06em;
+  margin-bottom  : 6px;
+}
+
+.kpi-value {
+  font-size   : 24px;
+  font-weight : 600;
+  color       : var(--text);
+}
+
+.kpi-sub {
+  font-size  : 12px;
+  color      : var(--text2);
+  margin-top : 4px;
+}
+
+/* Month-on-month change indicators */
+.kpi-change { font-size: 11px; margin-top: 4px; font-weight: 500; }
+.kpi-up     { color: var(--red);   }   /* worsened — red */
+.kpi-down   { color: var(--green); }   /* improved — green */
+.kpi-same   { color: var(--text3); }   /* no change */
+
+
+/* =============================================================================
+   8. CHART CARDS
+   ============================================================================= */
+
+.card {
+  background    : var(--surface);
+  border        : 1px solid var(--border);
+  border-radius : var(--radius-lg);
+  padding       : 1.25rem;
+  overflow      : clip;     /* clips visual bleed without blocking child scroll containers */
+}
+
+.card-title {
+  font-size      : 13px;
+  font-weight    : 600;
+  color          : var(--text2);
+  text-transform : uppercase;
+  letter-spacing : .06em;
+  margin-bottom  : 1rem;
+}
+
+.chart-wrap {
+  position : relative;
+  width    : 100%;
+}
+
+.section-title {
+  font-size      : 11px;
+  color          : var(--text3);
+  text-transform : uppercase;
+  letter-spacing : .08em;
+  margin-bottom  : 10px;
+  padding-bottom : 6px;
+  border-bottom  : 1px solid var(--border);
+}
+
+/* Comparison arrows used in MoM table */
+.arr-up   { color: var(--red);   }
+.arr-down { color: var(--green); }
+
+
+/* =============================================================================
+   9. DATA TABLES
+   ============================================================================= */
+
+.tbl-wrap { overflow-x: auto; }
+.scoring-tbl-wrap {
+  max-height: 420px;
+  overflow-x: auto;
+  overflow-y: auto;
+  /* Ensure inline styles aren't blocked by cascade */
+}
+
+table {
+  width           : 100%;
+  border-collapse : collapse;
+  font-size       : 12px;
+}
+
+th {
+  text-align     : left;
+  padding        : 8px 10px;
+  color          : var(--text3);
+  font-weight    : 500;
+  font-size      : 11px;
+  text-transform : uppercase;
+  letter-spacing : .05em;
+  border-bottom  : 1px solid var(--border);
+}
+
+td {
+  padding       : 8px 10px;
+  border-bottom : 1px solid var(--border);
+  color         : var(--text);
+}
+
+tr:last-child td { border-bottom: none; }
+tr:hover td      { background: var(--surface2); }
+
+/* Risk / status badges */
+.badge {
+  display       : inline-block;
+  padding       : 2px 8px;
+  border-radius : 4px;
+  font-size     : 11px;
+  font-weight   : 500;
+}
+
+.b-red   { background: rgba(224,  83,  83, .15); color: var(--red);    }
+.b-amber { background: rgba(224, 149,  69, .15); color: var(--amber);  }
+.b-green { background: rgba( 61, 184, 122, .15); color: var(--green);  }
+.b-blue  { background: rgba( 79, 142, 247, .15); color: var(--accent); }
+.b-teal  { background: rgba( 46, 196, 182, .15); color: var(--teal);   }
+
+/* Chart legend dots */
+.legend-row { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 10px; }
+.leg        { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text2); }
+.leg-dot    { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+
+/* =============================================================================
+   10. VIOLATION CARDS
+   ============================================================================= */
+
+.viol-grid {
+  display               : grid;
+  grid-template-columns : repeat(auto-fill, minmax(260px, 1fr));
+  gap                   : 8px;
+  margin-bottom         : 1.5rem;
+}
+
+.viol-card {
+  background    : var(--surface2);
+  border-radius : var(--radius);
+  padding       : 12px 14px;
+  border-left   : 3px solid var(--border2);
+  transition    : border-color .2s;
+}
+.viol-card:hover { border-left-color: var(--accent); }
+
+.viol-name { font-size: 12px; font-weight: 600; color: var(--text);  margin-bottom: 4px; }
+.viol-desc { font-size: 11px; color: var(--text2); line-height: 1.5; }
+
+/*
+ * Violation risk border colours.
+ * No !important needed here — these are the only rules targeting these classes
+ * outside of the print block, so specificity is clean.
+ */
+.viol-high { border-left-color: var(--red);   }
+.viol-med  { border-left-color: var(--amber); }
+.viol-low  { border-left-color: var(--green); }
+
+
+/* =============================================================================
+   11. GLOBAL FILTER BAR
+   ============================================================================= */
+
+.global-filter-bar {
+  background    : var(--surface);
+  border        : 1px solid var(--border2);
+  border-radius : var(--radius-lg);
+  padding       : 12px 1.25rem;
+  margin-bottom : 1rem;
+  display       : flex;
+  align-items   : center;
+  gap           : 12px;
+  flex-wrap     : wrap;
+}
+
+.global-filter-label {
+  font-size      : 11px;
+  color          : var(--text3);
+  text-transform : uppercase;
+  letter-spacing : .06em;
+  white-space    : nowrap;
+}
+
+.global-filter-toggle {
+  display       : flex;
+  border        : 1px solid var(--border2);
+  border-radius : var(--radius);
+  overflow      : hidden;
+  flex-shrink   : 0;
+}
+.global-filter-toggle button {
+  padding     : 6px 16px;
+  font-size   : 12px;
+  border      : none;
+  cursor      : pointer;
+  transition  : all .15s;
+  white-space : nowrap;
+}
+
+.global-filter-divider {
+  width       : 1px;
+  background  : var(--border2);
+  align-self  : stretch;
+  margin      : 0 4px;
+}
+
+
+/* =============================================================================
+   12. COMPARE MODE
+   ============================================================================= */
+
+.compare-tags {
+  display     : flex;
+  flex-wrap   : wrap;
+  align-items : center;
+  gap         : 6px;
+  flex        : 1;
+}
+
+.compare-tag {
+  display       : flex;
+  align-items   : center;
+  gap           : 4px;
+  padding       : 3px 8px;
+  border-radius : 4px;
+  font-size     : 11px;
+  font-weight   : 500;
+  color         : #fff;
+  white-space   : nowrap;
+}
+
+.compare-tag-x {
+  background : none;
+  border     : none;
+  color      : rgba(255, 255, 255, .7);
+  cursor     : pointer;
+  font-size  : 13px;
+  line-height: 1;
+  padding    : 0;
+  margin-left: 2px;
+}
+.compare-tag-x:hover { color: #fff; }
+
+.compare-add {
+  background    : none;
+  border        : 1px dashed var(--border2);
+  color         : var(--text3);
+  border-radius : 4px;
+  padding       : 3px 10px;
+  font-size     : 11px;
+  cursor        : pointer;
+  white-space   : nowrap;
+  transition    : all .15s;
+}
+.compare-add:hover    { border-color: var(--accent); color: var(--accent); }
+.compare-add:disabled { opacity: .4; cursor: not-allowed; }
+
+.compare-limit { font-size: 10px; color: var(--text3); white-space: nowrap; }
+
+
+/* =============================================================================
+   13. DATE RANGE PICKER
+   ============================================================================= */
+
+.date-range-wrap {
+  display     : flex;
+  align-items : center;
+  gap         : 8px;
+  flex-wrap   : wrap;
+}
+
+.date-range-label { font-size: 11px; color: var(--text3); white-space: nowrap; }
+
+.date-input {
+  background   : rgba(255, 255, 255, .04);
+  color        : var(--text);
+  border       : 1px solid var(--border2);
+  border-radius: var(--radius);
+  padding      : 6px 11px;
+  font-size    : 13px;
+  outline      : none;
+  cursor       : pointer;
+  color-scheme : dark;
+}
+.date-input:focus { border-color: var(--accent); }
+.date-input::-webkit-calendar-picker-indicator { filter: invert(1); opacity: .85; cursor: pointer; }
+.date-input::-webkit-datetime-edit             { color: var(--text2); }
+
+.date-range-btn {
+  background    : var(--accent);
+  color         : #fff;
+  border        : none;
+  border-radius : var(--radius);
+  padding       : 5px 14px;
+  font-size     : 12px;
+  cursor        : pointer;
+  transition    : background .2s;
+}
+.date-range-btn:hover { background: var(--accent2); }
+
+.date-range-reset {
+  background    : none;
+  color         : var(--text3);
+  border        : 1px solid var(--border2);
+  border-radius : var(--radius);
+  padding       : 5px 12px;
+  font-size     : 12px;
+  cursor        : pointer;
+  transition    : all .2s;
+}
+.date-range-reset:hover { color: var(--text); border-color: var(--text); }
+
+
+/* =============================================================================
+   14. EXECUTIVE SUMMARY
+   ============================================================================= */
+
+.exec-summary {
+  background    : var(--surface);
+  border        : 1px solid var(--border2);
+  border-radius : var(--radius-lg);
+  padding       : 1.5rem;
+  margin-bottom : 1.5rem;
+}
+
+.exec-summary-title {
+  font-size      : 11px;
+  font-weight    : 600;
+  color          : var(--text3);
+  text-transform : uppercase;
+  letter-spacing : .08em;
+  margin-bottom  : 1rem;
+}
+
+.exec-summary-body {
+  font-size   : 14px;
+  color       : var(--text2);
+  line-height : 1.85;
+}
+.exec-summary-body p {
+  margin-bottom : .65rem;
+  padding-bottom: .65rem;
+  border-bottom : 1px solid rgba(255, 255, 255, .05);
+}
+.exec-summary-body p:last-child {
+  margin-bottom  : 0;
+  padding-bottom : 0;
+  border-bottom  : none;
+}
+.exec-summary-body strong { color: var(--text); }
+.exec-summary-body .good    { color: var(--green); font-weight: 600; }
+.exec-summary-body .bad     { color: var(--red);   font-weight: 600; }
+.exec-summary-body .neutral { color: var(--amber); font-weight: 600; }
+
+/* Edit mode — visible dashed border when summary is being edited */
+.exec-summary-body.is-editing {
+  border        : 1px dashed var(--accent);
+  border-radius : 8px;
+  padding       : 10px;
+  background    : rgba(79, 142, 247, .05);
+}
+
+/* Notes textarea below the summary */
+.exec-notes-wrap {
+  margin-top  : 1rem;
+  padding-top : 1rem;
+  border-top  : 1px solid var(--border);
+}
+.exec-notes-label {
+  font-size      : 11px;
+  color          : var(--text3);
+  text-transform : uppercase;
+  letter-spacing : .06em;
+  margin-bottom  : 6px;
+}
+.exec-notes {
+  width        : 100%;
+  background   : var(--surface2);
+  color        : var(--text);
+  border       : 1px solid var(--border2);
+  border-radius: var(--radius);
+  padding      : 10px 14px;
+  font-size    : 13px;
+  line-height  : 1.6;
+  resize       : vertical;
+  min-height   : 80px;
+  outline      : none;
+  font-family  : inherit;
+}
+.exec-notes:focus       { border-color: var(--accent); }
+.exec-notes::placeholder{ color: var(--text3); }
+
+/* Edit / Save / Cancel buttons */
+.exec-edit-btn {
+  background    : rgba(79, 142, 247, .14);
+  color         : var(--accent);
+  border        : 1px solid rgba(79, 142, 247, .34);
+  border-radius : var(--radius);
+  padding       : 4px 10px;
+  font-size     : 11px;
+  cursor        : pointer;
+  transition    : all .2s;
+}
+.exec-edit-btn:hover { background: rgba(79, 142, 247, .2); }
+
+.exec-edit-btn-muted {
+  background   : transparent;
+  color        : var(--text2);
+  border-color : var(--border2);
+}
+.exec-edit-btn-muted:hover { border-color: var(--text2); color: var(--text); }
+
+
+/* =============================================================================
+   15. WARNING BANNER
+   ============================================================================= */
+
+.warn-banner {
+  background    : #1a170e;
+  border        : 1px solid rgba(224, 149, 69, .3);
+  border-radius : var(--radius);
+  padding       : 10px 14px;
+  margin-bottom : 1rem;
+  font-size     : 12px;
+  display       : flex;
+  align-items   : flex-start;
+  gap           : 8px;
+}
+.warn-banner b  { color: var(--amber); display: block; margin-bottom: 3px; }
+.warn-banner ul { margin: 2px 0 0 14px; color: var(--text2); }
+.warn-banner li { margin-bottom: 2px; }
+
+
+/* =============================================================================
+   16. TOAST NOTIFICATIONS
+   ============================================================================= */
+
+#toastContainer {
+  position       : fixed;
+  bottom         : 1.5rem;
+  right          : 1.5rem;
+  z-index        : 99999;
+  display        : flex;
+  flex-direction : column;
+  gap            : 8px;
+  pointer-events : none;
+}
+
+.toast {
+  display        : flex;
+  align-items    : flex-start;
+  gap            : 10px;
+  padding        : 12px 16px;
+  border-radius  : var(--radius);
+  font-size      : 13px;
+  min-width      : 280px;
+  max-width      : 380px;
+  pointer-events : all;
+  border         : 1px solid;
+  animation      : toastIn .25s ease;
+}
+
+@keyframes toastIn  { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes toastOut { from { opacity: 1; } to { opacity: 0; transform: translateY(8px); } }
+
+.t-icon  { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+.t-body  { flex: 1; }
+.t-title { font-weight: 600; margin-bottom: 2px; }
+.t-msg   { font-size: 12px; color: var(--text2); line-height: 1.5; }
+.t-close { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 16px; padding: 0; flex-shrink: 0; }
+
+.t-error   { background: #1e1215; border-color: rgba(224,  83,  83, .4); }
+.t-error   .t-title { color: var(--red);    }
+.t-warn    { background: #1a170e; border-color: rgba(224, 149,  69, .4); }
+.t-warn    .t-title { color: var(--amber);  }
+.t-success { background: #0e1a13; border-color: rgba( 61, 184, 122, .4); }
+.t-success .t-title { color: var(--green);  }
+.t-info    { background: #0e1320; border-color: rgba( 79, 142, 247, .4); }
+.t-info    .t-title { color: var(--accent); }
+
+
+/* =============================================================================
+   17. LOADING OVERLAY
+   ============================================================================= */
+
+#loadOverlay {
+  display         : none;   /* shown via .show class by JS */
+  position        : fixed;
+  inset           : 0;
+  background      : rgba(15, 17, 23, .88);
+  z-index         : 9998;
+  align-items     : center;
+  justify-content : center;
+  flex-direction  : column;
+  gap             : 14px;
+}
+#loadOverlay.show { display: flex; }
+
+.load-spin {
+  width         : 42px;
+  height        : 42px;
+  border        : 3px solid var(--border2);
+  border-top-color : var(--accent);
+  border-radius : 50%;
+  animation     : spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.load-msg { color: var(--text2); font-size: 13px; }
+.load-sub { color: var(--text3); font-size: 11px; margin-top: -8px; }
+
+
+/* =============================================================================
+   18. PDF / PRINT PROGRESS OVERLAY
+   ============================================================================= */
+
+#pdfOverlay {
+  display         : none;   /* shown via .show class by JS */
+  position        : fixed;
+  inset           : 0;
+  background      : rgba(0, 0, 0, .7);
+  z-index         : 9999;
+  align-items     : center;
+  justify-content : center;
+  flex-direction  : column;
+  gap             : 12px;
+}
+#pdfOverlay.show { display: flex; }
+
+.pdf-spinner {
+  width            : 40px;
+  height           : 40px;
+  border           : 3px solid var(--border2);
+  border-top-color : var(--accent);
+  border-radius    : 50%;
+  animation        : spin .8s linear infinite;
+}
+.pdf-msg { color: var(--text2); font-size: 13px; }
+
+
+/* =============================================================================
+   19. PRINT DIALOG (Office-style settings modal)
+   ============================================================================= */
+
+.print-dialog-overlay {
+  position        : fixed;
+  inset           : 0;
+  background      : rgba(0, 0, 0, .65);
+  z-index         : 10000;
+  display         : flex;
+  align-items     : center;
+  justify-content : center;
+  opacity         : 0;
+  pointer-events  : none;
+  transition      : opacity .2s;
+}
+.print-dialog-overlay.show { opacity: 1; pointer-events: all; }
+
+.print-dialog {
+  background  : #1a1e2e;
+  border      : 1px solid var(--border2);
+  border-radius: 4px;
+  display     : flex;
+  width       : 660px;
+  max-width   : 96vw;
+  height      : 460px;
+  max-height  : 90vh;
+  box-shadow  : 0 32px 80px rgba(0, 0, 0, .7);
+  overflow    : hidden;
+}
+
+/* Sidebar */
+.print-dialog-sidebar {
+  width        : 170px;
+  background   : #141726;
+  border-right : 1px solid var(--border2);
+  display      : flex;
+  flex-direction: column;
+  flex-shrink  : 0;
+}
+.print-dialog-sidebar-header {
+  padding       : 18px 16px 12px;
+  border-bottom : 1px solid var(--border2);
+}
+.print-dialog-sidebar-title { font-size: 17px; font-weight: 600; color: var(--text); }
+
+.print-sidebar-nav  { padding: 6px 0; flex: 1; }
+.print-sidebar-item {
+  display      : flex;
+  align-items  : center;
+  gap          : 10px;
+  padding      : 9px 16px;
+  font-size    : 12px;
+  color        : var(--text3);
+  cursor       : pointer;
+  transition   : all .15s;
+  border-left  : 3px solid transparent;
+}
+.print-sidebar-item:hover { background: rgba(255,255,255,.04); color: var(--text2); }
+.print-sidebar-item.active { background: rgba(79,142,247,.08); color: var(--accent); border-left-color: var(--accent); }
+.print-sidebar-item svg         { flex-shrink: 0; opacity: .7; }
+.print-sidebar-item.active svg  { opacity: 1; }
+
+/* Main panel */
+.print-dialog-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.print-dialog-main-header {
+  padding       : 18px 22px 14px;
+  border-bottom : 1px solid var(--border2);
+}
+.print-dialog-main-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+.print-dialog-main-sub   { font-size: 11px; color: var(--text3); }
+.print-dialog-content    { flex: 1; overflow-y: auto; padding: 16px 22px; }
+
+/* Settings rows */
+.print-setting-row {
+  display         : flex;
+  align-items     : center;
+  justify-content : space-between;
+  padding         : 10px 0;
+  border-bottom   : 1px solid rgba(255, 255, 255, .04);
+}
+.print-setting-row:last-child { border-bottom: none; }
+
+.print-setting-info  { display: flex; align-items: center; gap: 12px; }
+.print-setting-icon  {
+  width         : 34px;
+  height        : 34px;
+  background    : var(--surface2);
+  border        : 1px solid var(--border2);
+  border-radius : 4px;
+  display       : flex;
+  align-items   : center;
+  justify-content: center;
+  flex-shrink   : 0;
+  color         : var(--text2);
+}
+.print-setting-label { font-size: 12px; color: var(--text); font-weight: 500; }
+.print-setting-sub   { font-size: 10px; color: var(--text3); margin-top: 1px; }
+
+.print-setting-control select {
+  background        : var(--surface2);
+  color             : var(--text);
+  border            : 1px solid var(--border2);
+  border-radius     : 4px;
+  padding           : 5px 24px 5px 8px;
+  font-size         : 11px;
+  outline           : none;
+  cursor            : pointer;
+  min-width         : 140px;
+  appearance        : none;
+  -webkit-appearance: none;
+  background-image  : url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%238b90a7'/%3E%3C/svg%3E");
+  background-repeat : no-repeat;
+  background-position: right 7px center;
+}
+.print-setting-control select:focus { border-color: var(--accent); }
+
+/* Live preview */
+.print-dialog-preview {
+  width           : 140px;
+  background      : #141726;
+  border-left     : 1px solid var(--border2);
+  display         : flex;
+  flex-direction  : column;
+  align-items     : center;
+  justify-content : center;
+  gap             : 10px;
+  flex-shrink     : 0;
+  padding         : 14px;
+}
+.print-preview-label {
+  font-size      : 9px;
+  color          : var(--text3);
+  text-transform : uppercase;
+  letter-spacing : .06em;
+}
+.print-preview-page {
+  background  : #fff;
+  box-shadow  : 0 4px 16px rgba(0, 0, 0, .5);
+  transition  : all .3s;
+  position    : relative;
+  overflow    : hidden;
+}
+.print-preview-lines {
+  position       : absolute;
+  top            : 12%;
+  left           : 10%;
+  right          : 10%;
+  display        : flex;
+  flex-direction : column;
+  gap            : 3px;
+}
+.print-preview-line { height: 2px; background: rgba(0, 0, 0, .1); border-radius: 1px; }
+
+/* Footer */
+.print-dialog-footer {
+  padding       : 12px 22px;
+  border-top    : 1px solid var(--border2);
+  display       : flex;
+  align-items   : center;
+  justify-content: flex-end;
+  gap           : 10px;
+  background    : #141726;
+  flex-shrink   : 0;
+}
+.print-dialog-cancel {
+  background    : none;
+  border        : 1px solid var(--border2);
+  color         : var(--text2);
+  border-radius : var(--radius);
+  padding       : 7px 18px;
+  font-size     : 12px;
+  cursor        : pointer;
+  transition    : all .15s;
+}
+.print-dialog-cancel:hover { border-color: var(--text2); color: var(--text); }
+.print-dialog-confirm {
+  background    : var(--accent);
+  border        : none;
+  color         : #fff;
+  border-radius : var(--radius);
+  padding       : 7px 20px;
+  font-size     : 12px;
+  font-weight   : 500;
+  cursor        : pointer;
+  transition    : all .15s;
+  display       : flex;
+  align-items   : center;
+  gap           : 6px;
+}
+.print-dialog-confirm:hover { opacity: .9; }
+
+
+/* =============================================================================
+   20. SCORE BAND UTILITIES
+   Utility classes derived from SCORE_BANDS in constants.js.
+   Used on badges, table rows, and heatmap cells.
+   ============================================================================= */
+
+/* Score badge — coloured pill showing a vehicle's risk tier */
+.score-safe     { background: rgba( 61, 184, 122, .15); color: #1a6640; }
+.score-moderate { background: rgba(224, 149,  69, .15); color: #7a4a10; }
+.score-high     { background: rgba(224,  83,  83, .15); color: #7a1a1a; }
+
+
+/* =============================================================================
+   21. PRINT STYLES
+   ─────────────────────────────────────────────────────────────────────────────
+   !important IS intentional and necessary here.
+   Browser print engines ignore specificity — !important is the only reliable
+   way to override screen styles for print. All other !important declarations
+   have been removed from the rest of this file.
+   ============================================================================= */

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data Sphere</title>
+
+  <link rel="icon" class="logo-1" type="image/png" href="Images/logo.png">
+
+  <!-- Vendor CDN libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+
+  <!-- App stylesheet -->
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+
+<!-- ══════════ UPLOAD SCREEN ══════════ -->
+<div id="uploadScreen">
+  <img class="logo" src="Images/logo.png" alt="">
+  <div class="upload-logo">Data <span>Sphere</span> — Monthly Report Tool</div>
+  <div class="upload-card">
+    <h1>Upload Fleet Reports</h1>
+    <p>Upload one or more Excel fleet reports (.xlsx). For each file, set the client name and the report month — the dashboard date filter will be pre-filled automatically. Include a <strong>Previous Scoring</strong> sheet for month-on-month comparison.</p>
+    <div class="drop-zone" id="dropZone">
+      <input type="file" id="fileInput" accept=".xlsx,.xls" multiple />
+      <div class="drop-icon">📂</div>
+      <div class="drop-text"><strong>Choose files</strong> or drag &amp; drop here</div>
+      <div class="drop-text" style="margin-top:4px;font-size:11px;color:#555b72">
+        Supports: Scoring · Utilization · Previous Scoring sheets
+      </div>
+    </div>
+    <div class="file-list" id="fileList"></div>
+    <button class="btn-primary" id="goBtn" disabled onclick="runDashboard()" style="width:100%;margin-top:1rem">
+      Generate Dashboard →
+    </button>
+  </div>
+</div>
+
+<!-- ══════════ DASHBOARD ══════════ -->
+<div id="dashboard">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-brand">Data <span>Sphere</span></div>
+      <div class="client-tabs" id="clientTabs"></div>
+    </div>
+    <div class="topbar-right">
+      <button class="btn-icon" onclick="backToUpload()">
+        <svg viewBox="0 0 16 16"><path d="M8 1L1 8l7 7M1 8h14"/></svg>
+        Add Report
+      </button>
+    </div>
+  </div>
+  <div class="content" id="dashContent"></div>
+  <div class="dashboard-footer" id="dashFooter" style="display:none">
+    <div>
+      <div class="footer-brand">Data<span>Sphere</span></div>
+      <div class="footer-meta" id="footerMeta"></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span class="footer-badge">Monthly Report</span>
+      <span class="footer-meta" id="footerDate"></span>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════ TOAST NOTIFICATIONS ══════════ -->
+<div id="toastContainer"></div>
+
+<!-- ══════════ LOADING OVERLAY ══════════ -->
+<div id="loadOverlay">
+  <div class="load-spin"></div>
+  <div class="load-msg" id="loadMsg">Reading your file...</div>
+  <div class="load-sub" id="loadSub"></div>
+</div>
+
+<!-- ══════════ PDF GENERATING OVERLAY ══════════ -->
+<div id="pdfOverlay">
+  <div class="pdf-spinner"></div>
+  <div class="pdf-msg">Generating PDF, please wait...</div>
+</div>
+
+<!-- ══════════ APP SCRIPTS (order matters) ══════════ -->
+
+
+
+
+
+
+<script src="/js/constants.js"></script>
+<script src="/js/utils.js"></script>
+<script src="/js/dashboard.js"></script>
+<script src="/js/dashboard.bundle.js"></script>
+
+</body>
+</html>

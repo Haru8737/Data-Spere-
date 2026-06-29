@@ -1,0 +1,20 @@
+{
+  "name": "fleet-performance-dashboard",
+  "version": "1.0.0",
+  "description": "Fleet Performance Dashboard — web-based monthly reporting platform",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "express": "^4.22.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
