@@ -392,7 +392,8 @@ function buildVehicleMap(rows, cols) {
             type   : 'HARD_CAP',
             field  : v.key,
             count,
-            message: `${v.key}: ${count.toLocaleString()} events — exceeds physical possibility. Possible sensor loop or data corruption.`,
+            message: `${map[name].name} — ${v.key}: ${count.toLocaleString()} events — exceeds physical possibility. Possible sensor loop or data corruption.`,
+            
           });
         } else if (meanViol > 0 && count > meanViol * 15) {
           map[name]._warnings.push({
@@ -400,7 +401,7 @@ function buildVehicleMap(rows, cols) {
             field  : v.key,
             count,
             ratio  : Math.round(count / meanViol),
-            message: `${v.key}: ${count.toLocaleString()} events (${Math.round(count / meanViol)}× avg) — likely sensor fault, not driver behaviour.`,
+            message: `${map[name].name} — ${v.key}: ${count.toLocaleString()} events (${Math.round(count / meanViol)}× avg) — likely sensor fault, not driver behaviour.`,
           });
         }
       });

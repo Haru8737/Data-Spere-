@@ -394,7 +394,7 @@ function buildVehicleMap(rows, cols) {
           type   : 'HARD_CAP',
           field  : v.key,
           count,
-          message: `${v.key}: ${count.toLocaleString()} events — exceeds physical possibility. Possible sensor loop or data corruption.`,
+          message: `${map[name].name} — ${v.key}: ${count.toLocaleString()} events — exceeds physical possibility. Possible sensor loop or data corruption.`,
         });
       } else if (meanViol > 0 && count > meanViol * 15) {
         map[name]._warnings.push({
@@ -402,7 +402,7 @@ function buildVehicleMap(rows, cols) {
           field  : v.key,
           count,
           ratio  : Math.round(count / meanViol),
-          message: `${v.key}: ${count.toLocaleString()} events (${Math.round(count / meanViol)}× avg) — likely sensor fault, not driver behaviour.`,
+          message: `${map[name].name} — ${v.key}: ${count.toLocaleString()} events (${Math.round(count / meanViol)}× avg) — likely sensor fault, not driver behaviour.`,
         });
       }
     });
@@ -2462,7 +2462,7 @@ function buildDashboardHTML(
     <div class="grid-2" style="margin-bottom:1rem">
       <div class="card">
         <div class="card-title" id="riskTitle_${i}">All vehicles — advanced score ranking</div>
-        <div id="riskScroll_${i}" style="overflow-y:auto;max-height:320px">
+        <div id="riskScroll_${i}" style="overflow-y:auto;overflow-x:auto;max-height:320px">
           <div id="riskWrap_${i}" style="position:relative;height:320px">
             <canvas id="riskChart_${i}"></canvas>
           </div>
@@ -2483,7 +2483,7 @@ function buildDashboardHTML(
           <span class="leg"><span class="leg-dot" style="background:#4f8ef7"></span>Weekday</span>
           <span class="leg"><span class="leg-dot" style="background:#2ec4b6"></span>Weekend</span>
         </div>
-        <div id="wdweScroll_${i}" style="overflow-y:auto;max-height:320px">
+        <div id="wdweScroll_${i}" style="overflow-y:auto;overflow-x:auto;max-height:320px">
           <div id="wdweWrap_${i}" style="position:relative;height:320px">
             <canvas id="wdweChart_${i}"></canvas>
           </div>
@@ -2495,7 +2495,7 @@ function buildDashboardHTML(
           <span class="leg"><span class="leg-dot" style="background:#4f8ef7"></span>Active</span>
           <span class="leg"><span class="leg-dot" style="background:#555b72"></span>Idle</span>
         </div>
-        <div id="utilScroll_${i}" style="overflow-y:auto;max-height:320px">
+        <div id="utilScroll_${i}" style="overflow-y:auto;overflow-x:auto;max-height:320px">
           <div id="utilWrap_${i}" style="position:relative;height:320px">
             <canvas id="utilChart_${i}"></canvas>
           </div>
@@ -2513,7 +2513,7 @@ function buildDashboardHTML(
         <span class="leg"><span class="leg-dot" style="background:#3b6edc"></span>Current month</span>
         <span class="leg"><span class="leg-dot" style="background:#6ea8ff"></span>Previous month</span>
       </div>
-      <div id="prevScroll_${i}" style="overflow-y:auto;max-height:400px">
+      <div id="prevScroll_${i}" style="overflow-y:auto;overflow-x:auto;max-height:400px">
         <div id="prevWrap_${i}" style="position:relative;height:400px">
           <canvas id="prevChart_${i}"></canvas>
         </div>
@@ -2935,7 +2935,7 @@ function buildCharts(
           <span class="leg"><span class="leg-dot" style="background:#e05353"></span>Decreased</span>
           <span class="leg"><span class="leg-dot" style="background:rgba(79,142,247,0.45)"></span>Previous month</span>
         </div>
-        <div id="distCompScroll_${i}" style="overflow-y:auto;max-height:400px">
+        <div id="distCompScroll_${i}" style="overflow-y:auto;overflow-x:auto;max-height:400px">
           <div id="distCompWrap_${i}" style="position:relative;height:400px">
             <canvas id="distCompChart_${i}"></canvas>
           </div>
@@ -5175,18 +5175,18 @@ function buildDashboard(){
     (hasDailyData?'<div class="card" style="margin-bottom:1rem"><div style="margin-bottom:1rem"><div class="card-title" id="eDCTitle">Daily fleet distance (km)</div><div style="font-size:11px;color:var(--text3)" id="eDCSub">Total km covered by all vehicles each day</div></div><div class="chart-wrap" style="height:180px"><canvas id="eDailyChart"></canvas></div></div>':'')+
 
     '<div class="grid-2" style="margin-bottom:1rem">'+
-      '<div class="card"><div class="card-title" id="eRiskTitle">All vehicles — advanced score ranking</div><div id="eRiskScroll" style="overflow-y:auto;max-height:320px"><div id="eRiskWrap" style="position:relative;height:320px"><canvas id="eRiskChart"></canvas></div></div></div>'+
+      '<div class="card"><div class="card-title" id="eRiskTitle">All vehicles — advanced score ranking</div><div id="eRiskScroll" style="overflow-y:auto;overflow-x:auto;max-height:320px"><div id="eRiskWrap" style="position:relative;height:320px"><canvas id="eRiskChart"></canvas></div></div></div>'+
       '<div class="card"><div class="card-title" id="eViolTitle">Violation breakdown — fleet total</div><div class="legend-row" id="eViolLeg"></div><div class="chart-wrap" style="height:280px"><canvas id="eViolChart"></canvas></div></div>'+
     '</div>'+
 
     '<div class="grid-2" style="margin-bottom:1rem">'+
-      '<div class="card"><div class="card-title" id="eWdweTitle">Weekday vs weekend distance</div><div class="legend-row"><span class="leg"><span class="leg-dot" style="background:#4f8ef7"></span>Weekday</span><span class="leg"><span class="leg-dot" style="background:#2ec4b6"></span>Weekend</span></div><div id="eWdweScroll" style="overflow-y:auto;max-height:320px"><div id="eWdweWrap" style="position:relative;height:320px"><canvas id="eWdweChart"></canvas></div></div></div>'+
-      '<div class="card"><div class="card-title" id="eUtilTitle">Most idle vehicles — days active vs idle</div><div class="legend-row"><span class="leg"><span class="leg-dot" style="background:#4f8ef7"></span>Active</span><span class="leg"><span class="leg-dot" style="background:#555b72"></span>Idle</span></div><div id="eUtilScroll" style="overflow-y:auto;max-height:320px"><div id="eUtilWrap" style="position:relative;height:320px"><canvas id="eUtilChart"></canvas></div></div></div>'+
+      '<div class="card"><div class="card-title" id="eWdweTitle">Weekday vs weekend distance</div><div class="legend-row"><span class="leg"><span class="leg-dot" style="background:#4f8ef7"></span>Weekday</span><span class="leg"><span class="leg-dot" style="background:#2ec4b6"></span>Weekend</span></div><div id="eWdweScroll" style="overflow-y:auto;overflow-x:auto;max-height:320px"><div id="eWdweWrap" style="position:relative;height:320px"><canvas id="eWdweChart"></canvas></div></div></div>'+
+      '<div class="card"><div class="card-title" id="eUtilTitle">Most idle vehicles — days active vs idle</div><div class="legend-row"><span class="leg"><span class="leg-dot" style="background:#4f8ef7"></span>Active</span><span class="leg"><span class="leg-dot" style="background:#555b72"></span>Idle</span></div><div id="eUtilScroll" style="overflow-y:auto;overflow-x:auto;max-height:320px"><div id="eUtilWrap" style="position:relative;height:320px"><canvas id="eUtilChart"></canvas></div></div></div>'+
     '</div>'+
 
-    (hasPrev?'<div class="card" style="margin-bottom:1rem"><div class="card-title" id="ePrevTitle">Month-on-month Advance score — current vs previous</div><div class="legend-row"><span class="leg"><span class="leg-dot" style="background:#3b6edc"></span>Current</span><span class="leg"><span class="leg-dot" style="background:#6ea8ff"></span>Previous</span></div><div id="ePrevScroll" style="overflow-y:auto;max-height:400px"><div id="ePrevWrap" style="position:relative;height:400px"><canvas id="ePrevChart"></canvas></div></div></div>':'')+
+    (hasPrev?'<div class="card" style="margin-bottom:1rem"><div class="card-title" id="ePrevTitle">Month-on-month Advance score — current vs previous</div><div class="legend-row"><span class="leg"><span class="leg-dot" style="background:#3b6edc"></span>Current</span><span class="leg"><span class="leg-dot" style="background:#6ea8ff"></span>Previous</span></div><div id="ePrevScroll" style="overflow-y:auto;overflow-x:auto;max-height:400px"><div id="ePrevWrap" style="position:relative;height:400px"><canvas id="ePrevChart"></canvas></div></div></div>':'')+
 
-    (hasPrev?'<div class="card print-section-distcomp" style="margin-bottom:1rem"><div class="card-title" id="eDCCompTitle">Distance comparison — current vs previous month</div><div class="legend-row"><span class="leg"><span class="leg-dot" style="background:#3db87a"></span>Increased</span><span class="leg"><span class="leg-dot" style="background:#e05353"></span>Decreased</span><span class="leg"><span class="leg-dot" style="background:rgba(79,142,247,0.45)"></span>Previous month</span></div><div id="eDCCompScroll" style="overflow-y:auto;max-height:400px"><div id="eDCCompWrap" style="position:relative;height:400px"><canvas id="eDCCompChart"></canvas></div></div></div>':'')+
+    (hasPrev?'<div class="card print-section-distcomp" style="margin-bottom:1rem"><div class="card-title" id="eDCCompTitle">Distance comparison — current vs previous month</div><div class="legend-row"><span class="leg"><span class="leg-dot" style="background:#3db87a"></span>Increased</span><span class="leg"><span class="leg-dot" style="background:#e05353"></span>Decreased</span><span class="leg"><span class="leg-dot" style="background:rgba(79,142,247,0.45)"></span>Previous month</span></div><div id="eDCCompScroll" style="overflow-y:auto;overflow-x:auto;max-height:400px"><div id="eDCCompWrap" style="position:relative;height:400px"><canvas id="eDCCompChart"></canvas></div></div></div>':'')+
 
     '<div class="card print-section-flagged" style="margin-bottom:1.5rem">'+
       '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">'+
@@ -5274,7 +5274,7 @@ function buildCharts(){
 
   eRiskChart=new Chart(document.getElementById('eRiskChart'),{
     type:'bar',data:{labels:allRisk.map(function(v){return v.name;}),datasets:[{data:allRisk.map(function(v){return v.score||0;}),backgroundColor:allRisk.map(function(){return'#e05353';}),borderRadius:3}]},
-    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{callback:function(v){return v.toLocaleString();},color:'#555b72'},grid:{color:'rgba(255,255,255,0.04)'},border:{display:false}},y:{ticks:{font:function(ctx){return tickFont(ctx.tick.label,function(){return eRiskSel;});},color:function(ctx){return tickColor(ctx.tick.label,function(){return eRiskSel;});}}}}}
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{callback:function(v){return v.toLocaleString();},color:'#555b72'},grid:{color:'rgba(255,255,255,0.04)'},border:{display:false}},y:{ticks:{font:function(ctx){return tickFont(ctx.tick.label,function(){return eRiskSel;});},color:function(ctx){return tickColor(ctx.tick.label,function(){return eRiskSel;});}},afterFit:function(axis){axis.width=Math.max(axis.width,90);}}}}
   });
 
   document.getElementById('eViolLeg').innerHTML=activeViolations.map(function(v,idx){return'<span class="leg"><span class="leg-dot" style="background:'+VIOL_COLORS[idx%VIOL_COLORS.length]+'"></span>'+escHTML(v.short)+'</span>';}).join('');
@@ -5285,12 +5285,12 @@ function buildCharts(){
 
   eWdweChart=new Chart(document.getElementById('eWdweChart'),{
     type:'bar',data:{labels:allWdwe.map(function(v){return v.name;}),datasets:[{label:'Weekday',data:allWdwe.map(function(v){return v.weekdayDist||0;}),backgroundColor:'#4f8ef7',borderRadius:2},{label:'Weekend',data:allWdwe.map(function(v){return v.weekendDist||0;}),backgroundColor:'#2ec4b6',borderRadius:2}]},
-    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{stacked:true,ticks:{callback:function(v){return v.toLocaleString();},color:'#555b72'},grid:{color:'rgba(255,255,255,0.04)'},border:{display:false}},y:{stacked:true,ticks:{font:function(ctx){return tickFont(ctx.tick.label,function(){return eWdweSel;});},color:function(ctx){return tickColor(ctx.tick.label,function(){return eWdweSel;});}}}}}
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{stacked:true,ticks:{callback:function(v){return v.toLocaleString();},color:'#555b72'},grid:{color:'rgba(255,255,255,0.04)'},border:{display:false}},y:{stacked:true,ticks:{font:function(ctx){return tickFont(ctx.tick.label,function(){return eWdweSel;});},color:function(ctx){return tickColor(ctx.tick.label,function(){return eWdweSel;});}},afterFit:function(axis){axis.width=Math.max(axis.width,90);}}}}
   });
 
   eUtilChart=new Chart(document.getElementById('eUtilChart'),{
     type:'bar',data:{labels:allUtil.map(function(v){return v.name;}),datasets:[{label:'Active',data:allUtil.map(function(v){return v.daysActive||0;}),backgroundColor:'#4f8ef7',borderRadius:2},{label:'Idle',data:allUtil.map(function(v){return v.daysIdle||0;}),backgroundColor:'#555b72',borderRadius:2}]},
-    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{stacked:true,ticks:{color:'#555b72'},grid:{color:'rgba(255,255,255,0.04)'},border:{display:false}},y:{stacked:true,ticks:{font:function(ctx){return tickFont(ctx.tick.label,function(){return eUtilSel;});},color:function(ctx){return tickColor(ctx.tick.label,function(){return eUtilSel;});}}}}}
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{stacked:true,ticks:{color:'#555b72'},grid:{color:'rgba(255,255,255,0.04)'},border:{display:false}},y:{stacked:true,ticks:{font:function(ctx){return tickFont(ctx.tick.label,function(){return eUtilSel;});},color:function(ctx){return tickColor(ctx.tick.label,function(){return eUtilSel;});}},afterFit:function(axis){axis.width=Math.max(axis.width,90);}}}}
   });
 
   if(hasPrev){
@@ -5299,7 +5299,7 @@ function buildCharts(){
     document.getElementById('ePrevWrap').style.height=prevH+'px';
     ePrevChart=new Chart(document.getElementById('ePrevChart'),{
       type:'bar',data:{labels:allPrev.map(function(v){return v.name;}),datasets:[{label:'Current',data:allPrev.map(function(v){return v.score||0;}),backgroundColor:allPrev.map(function(){return'#3b6edc';}),borderRadius:3},{label:'Previous',data:allPrev.map(function(v){return prevMap[v.name]?prevMap[v.name].score||0:0;}),backgroundColor:'#6ea8ff',borderRadius:3}]},
-      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{callback:function(v){return v.toLocaleString();},color:'#555b72'},grid:{color:'rgba(255,255,255,0.04)'},border:{display:false}},y:{ticks:{font:function(ctx){return tickFont(ctx.tick.label,function(){return ePrevSel;});},color:function(ctx){return tickColor(ctx.tick.label,function(){return ePrevSel;});}}}}}
+      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{callback:function(v){return v.toLocaleString();},color:'#555b72'},grid:{color:'rgba(255,255,255,0.04)'},border:{display:false}},y:{ticks:{font:function(ctx){return tickFont(ctx.tick.label,function(){return ePrevSel;});},color:function(ctx){return tickColor(ctx.tick.label,function(){return ePrevSel;});}},afterFit:function(axis){axis.width=Math.max(axis.width,90);}}}}
     });
 
     var allNames=new Set([...vehicles.map(function(v){return v.name;}),...Object.keys(prevMap)]);
@@ -5308,7 +5308,7 @@ function buildCharts(){
     document.getElementById('eDCCompWrap').style.height=dcH+'px';
     eDCCompChart=new Chart(document.getElementById('eDCCompChart'),{
       type:'bar',data:{labels:allDC.map(function(v){return v.name;}),datasets:[{label:'Current',data:allDC.map(function(v){return v.currDist;}),backgroundColor:allDC.map(function(v){return v.currDist>=v.prevDist?'#3db87a':'#e05353';}),borderRadius:3},{label:'Previous',data:allDC.map(function(v){return v.prevDist;}),backgroundColor:allDC.map(function(v){return v.currDist>=v.prevDist?'#e05353':'#3db87a';}),borderRadius:3}]},
-      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return ctx.dataset.label+': '+Math.round(ctx.raw).toLocaleString()+' km';}}}},scales:{x:{ticks:{callback:function(v){return v.toLocaleString()+' km';},color:'#555b72'},grid:{color:'rgba(255,255,255,0.04)'},border:{display:false}},y:{ticks:{font:function(ctx){return tickFont(ctx.tick.label,function(){return eDistSel;});},color:function(ctx){return tickColor(ctx.tick.label,function(){return eDistSel;});}},border:{display:false}}}}
+      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return ctx.dataset.label+': '+Math.round(ctx.raw).toLocaleString()+' km';}}}},scales:{x:{ticks:{callback:function(v){return v.toLocaleString()+' km';},color:'#555b72'},grid:{color:'rgba(255,255,255,0.04)'},border:{display:false}},y:{ticks:{font:function(ctx){return tickFont(ctx.tick.label,function(){return eDistSel;});},color:function(ctx){return tickColor(ctx.tick.label,function(){return eDistSel;});}},border:{display:false},afterFit:function(axis){axis.width=Math.max(axis.width,90);}}}}
     });
   }
 }
