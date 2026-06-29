@@ -1,35 +1,4 @@
 /**
- * dashboard.bundle.js
- * ─────────────────────────────────────────────────────────────────────────────
- * Data Sphere — Fleet Performance Dashboard
- * Complete application bundle — all modules in one file.
- *
- * Load order (index.html must load scripts in this order):
- *   1. constants.js         — SCORE_BANDS, VIOLATIONS, VIOL_COLORS, COMPARE_COLORS,
- *                             getScoreBand(), isAtRisk()
- *   2. utils.js             — setEl(), setKpi(), setWrapHeight(), fmt(), fmtPct(),
- *                             safeNum(), pct(), pad2(), formatDate(), changeTag()
- *   3. dashboard.js         — top-level state: clients, activeClient, DashState
- *   4. dashboard.bundle.js  — all rendering, parsing, and chart logic (this file)
- *
- * This bundle contains (in order):
- *   parser.js  — Excel parsing, vehicle map, day columns, enrichment
- *   ui.js      — escapeHTML, toasts, loading overlay, tabs, navigation
- *   print.js   — print dialog, chart pagination, PDF pipeline
- *   charts.js  — renderClient(), all chart builders, filter/compare/vehicle modes
- *   export.js  — exportReport(), standalone HTML report generator
- *
- * To rebuild this bundle after editing individual files, run:
- *   cat parser.js ui.js print.js charts.js export.js > dashboard.bundle.js
- * ─────────────────────────────────────────────────────────────────────────────
- */
-
-/* ─────────────────────────────────────────────────────────────────────────────
- * SCORE_BANDS, VIOLATIONS, VIOL_COLORS, COMPARE_COLORS_MAIN, getScoreBand(),
- * and isAtRisk() are all defined in constants.js — loaded before this bundle.
- * ───────────────────────────────────────────────────────────────────────────── */
-
-/**
  * parser.js
  * ─────────────────────────────────────────────────────────────────────────────
  * All data-reading logic: file uploads, Excel parsing, vehicle extraction,
@@ -296,13 +265,11 @@ function detectCols(rows) {
     if (kl.includes('weekend dist'))     found.weekendDist = k;
   });
 
-  /* Map each violation key to its matching Excel column — exact normalised match
-     ignores spaces, hyphens and capitalisation so "OverSpeeding" matches
-     "Over Speeding" without cross-matching "Over Speeding in location" */
+  /* Map each violation key to its matching Excel column (first 10 chars match) */
   VIOLATIONS.forEach(v => {
-    const normalise = s => s.toLowerCase().replace(/[\s\-_]/g, '');
-    const normKey   = normalise(v.key);
-    const match     = keys.find(k => normalise(k) === normKey);
+    const match = keys.find(k =>
+      k.toLowerCase().trim().includes(v.key.toLowerCase().trim().slice(0, 10))
+    );
     if (match) found[v.key] = match;
   });
 
@@ -414,7 +381,7 @@ function buildVehicleMap(rows, cols) {
 
     /* ── Violation anomaly detection ── */
     /* Flags vehicles where one violation type is disproportionately high
-     * vs all others — the signature of a sensor loop fault, not bad driving */
+     * vs all others — signature of a sensor loop fault, not bad driving  */
     map[name]._warnings = map[name]._warnings || [];
     const violCounts = VIOLATIONS.map(v => map[name][v.key] || 0);
     const totalViol  = violCounts.reduce((s, c) => s + c, 0);
@@ -422,39 +389,25 @@ function buildVehicleMap(rows, cols) {
 
     VIOLATIONS.forEach((v, i) => {
       const count = violCounts[i];
-      /* Hard cap: physically impossible in any single monthly report */
       if (count > 10000) {
         map[name]._warnings.push({
-          type    : 'HARD_CAP',
-          field   : v.key,
+          type   : 'HARD_CAP',
+          field  : v.key,
           count,
-          message : `${v.key}: ${count.toLocaleString()} events — exceeds physical possibility. Possible sensor loop or data corruption.`,
+          message: `${v.key}: ${count.toLocaleString()} events — exceeds physical possibility. Possible sensor loop or data corruption.`,
         });
-      /* Disproportionality: this type is 15× the average of all other types */
       } else if (meanViol > 0 && count > meanViol * 15) {
         map[name]._warnings.push({
-          type    : 'DISPROPORTIONATE',
-          field   : v.key,
+          type   : 'DISPROPORTIONATE',
+          field  : v.key,
           count,
-          ratio   : Math.round(count / meanViol),
-          message : `${v.key}: ${count.toLocaleString()} events (${Math.round(count / meanViol)}× fleet avg) — likely sensor fault, not driver behaviour.`,
+          ratio  : Math.round(count / meanViol),
+          message: `${v.key}: ${count.toLocaleString()} events (${Math.round(count / meanViol)}× avg) — likely sensor fault, not driver behaviour.`,
         });
       }
     });
 
-    /* Store all extra raw columns not already mapped, so the table can show them */
-    const knownCols = new Set([
-      cols.vehicle, cols.totalDist, cols.score,
-      cols.daysActive, cols.daysIdle, cols.weekdayDist, cols.weekendDist,
-      ...VIOLATIONS.map(v => cols[v.key]).filter(Boolean)
-    ]);
-    map[name]._extra = map[name]._extra || {};
-    Object.keys(row).forEach(k => {
-      if (!knownCols.has(k) && k && row[k] !== undefined && String(row[k]).trim() !== '') {
-        map[name]._extra[k] = row[k];
-      }
-    });
-  });
+  });  // ← end rows.forEach
 
   return map;
 }
@@ -498,6 +451,7 @@ function buildPrevMap(prevRows, pCols) {
     VIOLATIONS.forEach(v => {
       prevMap[name][v.key] = Number(row[pCols[v.key]] || row[v.key] || row[v.short] || 0);
     });
+
 
     /* Store normalised key for fuzzy lookup */
     normIndex[normaliseName(name)] = name;
@@ -819,7 +773,6 @@ function buildVehicleDailyData(utilRows, uCols, dayInfo) {
   });
   return result;
 }
-
 /**
  * ui.js
  * ─────────────────────────────────────────────────────────────────────────────
@@ -1098,12 +1051,10 @@ function validateVehicleData(vehicles) {
     );
   }
 
-  /* Violation anomaly warnings — surfaces sensor fault flags as toasts */
-    vehicles.forEach(v => {
-      (v._warnings || []).forEach(w => {
-        warns.push(`${v.name}: ${w.message}`);
-      });
-    });
+  /* ── Per-vehicle anomaly warnings from buildVehicleMap() ── */
+  vehicles.forEach(v => {
+    (v._warnings || []).forEach(w => warns.push(w.message));
+  });
 
   return warns;
 }
@@ -1192,7 +1143,6 @@ function backToUpload() {
   pendingFiles = [];
   renderFileList();
 }
-
 /**
  * print.js
  * ─────────────────────────────────────────────────────────────────────────────
@@ -1953,7 +1903,6 @@ function downloadPDF(clientName) {
 function printReport() {
   openPrintDialog('print', '');
 }
-
 /**
  * charts.js
  * ─────────────────────────────────────────────────────────────────────────────
@@ -2222,34 +2171,23 @@ function renderClient(i) {
   );
 
   /* ── Build tables ── */
-  /* vehicleSelectionContext persists selected vehicle(s) so toggling
-     All vehicles / Flagged only does not lose the selection.          */
-  /* vehicleTableMode, vehicleTableContext, vehicleSelectionCtx, vehicleSelectionLabel
-     — owned by DashState in dashboard.js (Phase 1A refactor) */
-
   function renderVehicleTable(overrideVehicles, forceAll) {
-    if (overrideVehicles) {
-      DashState.vehicleTableContext   = overrideVehicles;
-      DashState.vehicleSelectionCtx   = overrideVehicles; /* remember the selection */
-    }
+    if (overrideVehicles) vehicleTableContext = overrideVehicles;
     _renderVehicleTable(
       i, vehicles, flaggedVehicles, hasPrev, prevMap,
       activeViolations,
-      forceAll ? null : (DashState.vehicleTableContext !== undefined ? DashState.vehicleTableContext : DashState.vehicleSelectionCtx),
+      overrideVehicles !== undefined ? overrideVehicles : vehicleTableContext,
       forceAll
     );
-  }
-
-  function clearVehicleTableSelection() {
-    /* Only called when filter truly resets to whole fleet */
-    DashState.vehicleTableContext   = null;
-    DashState.vehicleSelectionCtx   = null;
-    DashState.vehicleSelectionLabel = '';
   }
 
   function renderBestPerfTable(overrideVehicles) {
     _renderBestPerfTable(i, vehicles, overrideVehicles);
   }
+
+  /* ── Vehicle table mode toggle ── */
+  let vehicleTableMode    = 'flagged';
+  let vehicleTableContext = null;
 
   document.getElementById(`btnFlaggedOnly_${i}`)
     ?.addEventListener('click', () => setVehicleTableMode('flagged'));
@@ -2257,8 +2195,8 @@ function renderClient(i) {
     ?.addEventListener('click', () => setVehicleTableMode('all'));
 
   function setVehicleTableMode(mode) {
-    DashState.vehicleTableMode  = mode;
-    /* Do NOT clear DashState.vehicleSelectionCtx — toggling All/Flagged preserves selection */
+    vehicleTableMode    = mode;
+    vehicleTableContext = null;
     const btnF = document.getElementById(`btnFlaggedOnly_${i}`);
     const btnA = document.getElementById(`btnAllVehicles_${i}`);
     if (btnF) {
@@ -2271,24 +2209,7 @@ function renderClient(i) {
       btnA.style.color       = mode === 'all' ? '#fff' : 'var(--text2)';
       btnA.style.borderColor = mode === 'all' ? 'var(--accent)' : 'var(--border2)';
     }
-    if (mode === 'all') {
-      /* Show all vehicles */
-      _renderVehicleTable(i, vehicles, flaggedVehicles, hasPrev, prevMap,
-        activeViolations, null, true);
-    } else {
-      /* Flagged mode: restore selection if one exists, else show flagged list */
-      if (DashState.vehicleSelectionCtx) {
-        DashState.vehicleTableContext = DashState.vehicleSelectionCtx;
-        setEl(`flaggedTitle_${i}`, DashState.vehicleSelectionLabel || 'Selected vehicles');
-        _renderVehicleTable(i, vehicles, flaggedVehicles, hasPrev, prevMap,
-          activeViolations, DashState.vehicleSelectionCtx, false);
-      } else {
-        DashState.vehicleTableContext = null;
-        setEl(`flaggedTitle_${i}`, 'Vehicles Scoring');
-        _renderVehicleTable(i, vehicles, flaggedVehicles, hasPrev, prevMap,
-          activeViolations, null, false);
-      }
-    }
+    renderVehicleTable(null, mode === 'all');
   }
 
   /* ── Compare mode chart updates ── */
@@ -2615,8 +2536,8 @@ function buildDashboardHTML(
             color:var(--text2);cursor:pointer">All vehicles</button>
         </div>
       </div>
-      <div class="tbl-wrap scoring-tbl-wrap" id="scoringTblWrap_${i}" style="max-height:420px;overflow-x:auto;overflow-y:auto;width:100%">
-        <table style="min-width:${Math.max(900,500+activeViolations.length*90)}px;white-space:nowrap" id="vehicleScoringTable_${i}">
+      <div class="tbl-wrap" style="max-height:420px;overflow-x:auto;overflow-y:auto;width:100%">
+        <table style="min-width:max(900px, calc(500px + ${activeViolations.length * 90}px));white-space:nowrap">
           <thead><tr>
             <th>Vehicle</th><th>Total km</th>
             ${hasPrev ? '<th>Prev km</th><th>Dist Change</th>' : ''}
@@ -2625,7 +2546,6 @@ function buildDashboardHTML(
             <th>Days Active</th><th>Days Idle</th>
             <th>Weekday km</th><th>Weekend km</th>
             ${activeViolations.map(v => `<th>${v.short}</th>`).join('')}
-            ${(()=>{const extraKeys=[];vehicles.forEach(v=>{Object.keys(v._extra||{}).forEach(k=>{if(!extraKeys.includes(k))extraKeys.push(k);});});return extraKeys.map(k=>`<th>${k}</th>`).join('');})()}
             <th>Risk</th>
           </tr></thead>
           <tbody id="alertBody_${i}"></tbody>
@@ -3105,7 +3025,45 @@ function buildCharts(
 }
 
 
-/* changeTag() is defined in utils.js — loaded before this bundle. */
+/* ═══════════════════════════════════════════════════════════════════════════
+ * 4. changeTag()
+ * Returns an HTML <span> showing month-on-month change for KPI cards.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
+/**
+ * changeTag(curr, prev, lowerIsBetter)
+ * Generates a coloured percentage or absolute change indicator.
+ *
+ * When the change exceeds 100%, shows an absolute difference instead of
+ * a percentage (e.g. "▲ +20 vs last month" rather than "▲ 900%").
+ *
+ * @param {number}  curr           — current month value
+ * @param {number}  prev           — previous month value
+ * @param {boolean} lowerIsBetter  — true for scores; false for distance
+ * @returns {string} HTML string
+ */
+function changeTag(curr, prev, lowerIsBetter = true) {
+  if (prev === null || prev === undefined || prev === 0) return '';
+
+  const diff   = curr - prev;
+  const rawPct = Math.abs(diff) / Math.abs(prev) * 100;
+
+  if (rawPct < 1) return `<span class="kpi-change kpi-same">→ no change</span>`;
+
+  const improved = lowerIsBetter ? diff < 0 : diff > 0;
+  const cls      = improved ? 'kpi-down' : 'kpi-up';
+  const arrow    = diff > 0 ? '▲' : '▼';
+
+  /* Beyond 100% change: show absolute difference to avoid misleading "900%" */
+  if (rawPct > 100) {
+    const absDiff = Math.round(Math.abs(diff));
+    const sign    = diff > 0 ? '+' : '-';
+    return `<span class="kpi-change ${cls}">${arrow} ${sign}${absDiff} vs last month</span>`;
+  }
+
+  const pct = Math.round(rawPct);
+  return `<span class="kpi-change ${cls}">${arrow} ${pct}% vs last month</span>`;
+}
 
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -3181,10 +3139,9 @@ function buildFilterBar(
       allRiskVehicles, allWdweVehicles, allUtilVehicles, riskFullH
     );
 
-    /* Preserve DashState.vehicleSelectionCtx: switching to fleet and back to flagged
-       should still show the previously selected vehicle(s), not reset to generic flagged list */
+    vehicleTableContext = null;
     generateSummary();
-    setVehicleTableMode('flagged');
+    renderVehicleTable(null, vehicleTableMode === 'all');
     renderBestPerfTable();
   });
 
@@ -3536,8 +3493,7 @@ function _updateCompareCharts(
 
   /* Update summary, flagged table, and best performers */
   const cmpVehicles = vehicles.filter(v => sel.includes(v.name));
-  DashState.vehicleSelectionLabel = `Comparison — ${sel.length} vehicles`;
-  setEl(`flaggedTitle_${i}`, DashState.vehicleSelectionLabel);
+  setEl(`flaggedTitle_${i}`, `Comparison — ${sel.length} vehicles`);
   renderVehicleTable(cmpVehicles);
   renderBestPerfTable(cmpVehicles);
   generateSummary(cmpVehicles, 'Comparison');
@@ -3813,11 +3769,10 @@ function _updateVehicleChart(
   }
 
   /* ── Summary and tables ── */
-  DashState.vehicleSelectionLabel = `Details — ${name}`;
   generateSummary([veh], name);
   renderVehicleTable([veh]);
   renderBestPerfTable([veh]);
-  setEl(`flaggedTitle_${i}`, DashState.vehicleSelectionLabel);
+  setEl(`flaggedTitle_${i}`, `Details — ${name}`);
 }
 
 
@@ -4086,11 +4041,6 @@ function _renderVehicleTable(
       `<td>${(v.weekdayDist !== undefined ? Math.round(v.weekdayDist).toLocaleString() : '—')}</td>` +
       `<td>${(v.weekendDist !== undefined ? Math.round(v.weekendDist).toLocaleString() : '—')}</td>`;
 
-    /* Extra raw columns — collect keys from all vehicles once */
-    const extraKeys = [];
-    vehicles.forEach(vh => { Object.keys(vh._extra || {}).forEach(k => { if (!extraKeys.includes(k)) extraKeys.push(k); }); });
-    const extraCells = extraKeys.map(k => `<td>${escapeHTML(String(v._extra && v._extra[k] !== undefined ? v._extra[k] : '—'))}</td>`).join('');
-
     const tr = document.createElement('tr');
     tr.innerHTML =
       `<td>${escapeHTML(v.name)}</td>` +
@@ -4100,7 +4050,6 @@ function _renderVehicleTable(
       changeCell +
       utilCells +
       activeViolations.map(vd => `<td>${(v[vd.key] || 0).toLocaleString()}</td>`).join('') +
-      extraCells +
       `<td><span class="badge ${badgeCls}">${band.label}</span></td>`;
     tbody.appendChild(tr);
   });
@@ -4440,7 +4389,41 @@ function buildViolationGuide(i, vehicles, prevVehicles, hasPrev, activeViolation
 }
 
 
-/* setEl(), setKpi(), setWrapHeight() are defined in utils.js — loaded before this bundle. */
+/* ═══════════════════════════════════════════════════════════════════════════
+ * UTILITY HELPERS
+ * Small shared helpers used throughout this file.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
+/**
+ * setEl(id, text)
+ * Sets the textContent of a DOM element by ID. Safe no-op if not found.
+ */
+function setEl(id, text) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = text;
+}
+
+/**
+ * setKpi(i, n, label, value, sub)
+ * Updates a KPI card's label, value, and sub-text in one call.
+ */
+function setKpi(i, n, label, value, sub) {
+  setEl(`kpiLbl${n}_${i}`, label);
+  setEl(`kpiVal${n}_${i}`, value);
+  setEl(`kpiSub${n}_${i}`, sub);
+}
+
+/**
+ * setWrapHeight(i, name, height, maxHeight)
+ * Sets the pixel height of a chart's wrap and scroll container.
+ * Naming convention: wrapEl = `${name}Wrap_${i}`, scrollEl = `${name}Scroll_${i}`
+ */
+function setWrapHeight(i, name, height, maxHeight) {
+  const wrap   = document.getElementById(`${name}Wrap_${i}`);
+  const scroll = document.getElementById(`${name}Scroll_${i}`);
+  if (wrap)   wrap.style.height      = `${height}px`;
+  if (scroll) scroll.style.maxHeight = `${maxHeight}px`;
+}
 
 /**
  * collapseBarChart(chartInst, i, name, data, fields, barH, title, titleId)
@@ -4591,7 +4574,6 @@ function restoreAllChartsToFleet(
     setEl(`distCompTitle_${i}`, 'Distance comparison — current vs previous month');
   }
 }
-
 /**
  * export.js
  * ─────────────────────────────────────────────────────────────────────────────
@@ -4721,7 +4703,7 @@ function exportReport(clientName) {
       day: 'numeric', month: 'long', year: 'numeric',
     }),
 
-    /* Processed vehicle data — _warnings included per vehicle for anomaly display */
+    /* Processed vehicle data */
     vehicles,
     prevMap,
     hasPrev      : Object.keys(prevMap).length > 0,
@@ -4864,7 +4846,7 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 .section-title{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
 
 /* ── Tables ── */
-.tbl-wrap{overflow-x:auto}.scoring-tbl-wrap{max-height:420px;overflow-x:auto;overflow-y:auto}
+.tbl-wrap{overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:12px}
 th{text-align:left;padding:8px 10px;color:var(--text3);font-weight:500;font-size:11px;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border)}
 td{padding:8px 10px;border-bottom:1px solid var(--border);color:var(--text)}
@@ -4934,6 +4916,7 @@ tr:hover td{background:var(--surface2)}
 .t-close{background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;padding:0;flex-shrink:0}
 .t-error{background:#1e1215;border-color:rgba(224,83,83,.4)}.t-error .t-title{color:var(--red)}
 .t-warn{background:#1a170e;border-color:rgba(224,149,69,.4)}.t-warn .t-title{color:var(--amber)}
+.warn-banner{display:flex;align-items:flex-start;gap:12px;background:rgba(224,149,69,.08);border:1px solid rgba(224,149,69,.35);border-radius:var(--radius-lg);padding:14px 18px;margin-bottom:1.25rem;font-size:13px;color:var(--text2);line-height:1.6}.warn-banner b{color:var(--text)}.warn-banner ul{margin:6px 0 0 1.1rem;padding:0}.warn-banner li{margin-bottom:3px}
 .t-success{background:#0e1a13;border-color:rgba(61,184,122,.4)}.t-success .t-title{color:var(--green)}
 .t-info{background:#0e1320;border-color:rgba(79,142,247,.4)}.t-info .t-title{color:var(--accent)}
 
@@ -5157,6 +5140,22 @@ function buildDashboard(){
       '</div>'+
     '</div>'+
 
+    /* ── Data anomaly warning banner — matches main dashboard warn-banner style ── */
+    (vehicles.some(function(v){return(v._warnings||[]).length>0;}) ?
+      '<div class="warn-banner">'+
+        '<span style="font-size:16px;flex-shrink:0">&#9888;</span>'+
+        '<div><b>Data warnings for '+escHTML(D.clientName)+'</b>'+
+          '<ul>'+
+            vehicles.filter(function(v){return(v._warnings||[]).length>0;}).map(function(v){
+              return v._warnings.map(function(w){
+                return '<li>'+escHTML(v.name)+' — '+escHTML(w.message)+'</li>';
+              }).join('');
+            }).join('')+
+          '</ul>'+
+        '</div>'+
+      '</div>'
+    : '')+
+
     '<div class="exec-summary">'+
       '<div class="exec-summary-title">Executive Summary</div>'+
       '<div class="exec-summary-body" id="eExecBody"></div>'+
@@ -5189,21 +5188,6 @@ function buildDashboard(){
 
     (hasPrev?'<div class="card print-section-distcomp" style="margin-bottom:1rem"><div class="card-title" id="eDCCompTitle">Distance comparison — current vs previous month</div><div class="legend-row"><span class="leg"><span class="leg-dot" style="background:#3db87a"></span>Increased</span><span class="leg"><span class="leg-dot" style="background:#e05353"></span>Decreased</span><span class="leg"><span class="leg-dot" style="background:rgba(79,142,247,0.45)"></span>Previous month</span></div><div id="eDCCompScroll" style="overflow-y:auto;max-height:400px"><div id="eDCCompWrap" style="position:relative;height:400px"><canvas id="eDCCompChart"></canvas></div></div></div>':'')+
 
-    /* ── Anomaly / sensor fault warning banner ── */
-      (vehicles.some(function(v){return(v._warnings||[]).length>0;}) ?
-        '<div style="background:rgba(224,83,83,.08);border:1px solid rgba(224,83,83,.3);border-radius:10px;padding:16px;margin-bottom:1rem">'+
-          '<div style="font-size:13px;font-weight:700;color:#e05353;margin-bottom:10px">⚠ Data Anomalies Detected — Review Before Acting</div>'+
-          '<div style="font-size:12px;color:var(--text3);margin-bottom:10px">The following vehicles show violation counts that are physically impossible or disproportionate to all other violation types. This is typically caused by a sensor loop fault or data corruption — not driver behaviour.</div>'+
-          '<ul style="font-size:12px;color:var(--text2);line-height:1.8;padding-left:1.2rem">'+
-            vehicles.filter(function(v){return(v._warnings||[]).length>0;}).map(function(v){
-              return v._warnings.map(function(w){
-                return '<li><strong>'+escHTML(v.name)+'</strong> — '+escHTML(w.message)+'</li>';
-              }).join('');
-            }).join('')+
-          '</ul>'+
-        '</div>'
-      : '')+
-
     '<div class="card print-section-flagged" style="margin-bottom:1.5rem">'+
       '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">'+
         '<div class="card-title" id="eFlaggedTitle" style="margin-bottom:0">Vehicles Scoring</div>'+
@@ -5212,11 +5196,12 @@ function buildDashboard(){
           '<button id="eBtnAllVehicles" onclick="eSetTableMode(\\'all\\')" style="padding:4px 10px;font-size:11px;border-radius:20px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer">All vehicles</button>'+
         '</div>'+
       '</div>'+
-      '<div class="tbl-wrap" style="max-height:420px;overflow-x:auto;overflow-y:auto">'+
-        '<table style="min-width:900px"><thead><tr><th>Vehicle</th><th>Total km</th>'+(hasPrev?'<th>Prev km</th><th>Dist Change</th>':'')+'<th>Advanced Score</th>'+
+      '<div class="tbl-wrap" style="max-height:420px;overflow-x:auto;overflow-y:auto;width:100%">'+
+        '<table style="min-width:'+Math.max(900,500+activeViolations.length*90)+'px;white-space:nowrap"><thead><tr><th>Vehicle</th><th>Total km</th>'+(hasPrev?'<th>Prev km</th><th>Dist Change</th>':'')+'<th>Advanced Score</th>'+
         (hasPrev?'<th>Prev Score</th><th>Score Change</th>':'')+
         '<th>Days Active</th><th>Days Idle</th><th>Weekday km</th><th>Weekend km</th>'+
         activeViolations.map(function(v){return'<th>'+escHTML(v.short)+'</th>';}).join('')+
+        (function(){var ek=[];vehicles.forEach(function(v){Object.keys(v._extra||{}).forEach(function(k){if(ek.indexOf(k)===-1)ek.push(k);});});return ek.map(function(k){return'<th>'+escHTML(k)+'</th>';}).join('');})() +
         '<th>Risk</th></tr></thead><tbody id="eAlertBody"></tbody></table>'+
       '</div>'+
     '</div>'+
@@ -5545,9 +5530,9 @@ function eSetMode(mode){
     var kv5=document.getElementById('eKV5');if(kv5){kv5.style.fontSize='';kv5.style.color='var(--red)';}
     setKpi(6,'Violation types',activeViolations.length,'detected in data');
     var chg1=document.getElementById('eKC1');if(chg1)chg1.style.display='';
-    setEl('eFlaggedTitle','Vehicles Scoring');
-    eTableOverride=null;
-    renderVehicleTable();renderBestPerfTable();
+    /* Preserve eSelectionContext: switching to fleet/all and back to flagged
+       should still show the previously selected vehicle(s), not reset to generic flagged list */
+    eSetTableMode('flagged');renderBestPerfTable();
     eGenerateSummary();
     eUpdateResetBtnVisibility();
   }
@@ -5636,7 +5621,7 @@ function eUpdateVehicle(name){
   if(ePrevChart&&hasPrev){var prevScore=prevMap[name]?prevMap[name].score||0:0;var pH=Math.max(80,90);document.getElementById('ePrevWrap').style.height=pH+'px';document.getElementById('ePrevScroll').style.maxHeight=pH+'px';ePrevChart.data.labels=[name];ePrevChart.data.datasets[0].data=[veh.score||0];ePrevChart.data.datasets[0].backgroundColor=['#4f8ef7'];ePrevChart.data.datasets[0].barPercentage=0.35;ePrevChart.data.datasets[0].categoryPercentage=0.5;ePrevChart.data.datasets[1].data=[prevScore];ePrevChart.data.datasets[1].backgroundColor=['rgba(79,142,247,0.45)'];ePrevChart.data.datasets[1].barPercentage=0.35;ePrevChart.data.datasets[1].categoryPercentage=0.5;ePrevChart.update();setEl('ePrevTitle','Month-on-month — '+name);}
   eDistSel=name;
   if(eDCCompChart&&hasPrev){var prevDist=prevMap[name]?prevMap[name].totalDist||0:0;var currDist=veh.totalDist||0;eDCCompChart.data.labels=[name];eDCCompChart.data.datasets[0].data=[currDist];eDCCompChart.data.datasets[0].backgroundColor=[currDist>=prevDist?'#3db87a':'#e05353'];eDCCompChart.data.datasets[0].barPercentage=0.35;eDCCompChart.data.datasets[0].categoryPercentage=0.5;eDCCompChart.data.datasets[1].data=[prevDist];eDCCompChart.data.datasets[1].backgroundColor=[currDist>=prevDist?'#e05353':'#3db87a'];eDCCompChart.data.datasets[1].barPercentage=0.35;eDCCompChart.data.datasets[1].categoryPercentage=0.5;eDCCompChart.update();document.getElementById('eDCCompWrap').style.height='120px';document.getElementById('eDCCompScroll').style.maxHeight='120px';setEl('eDCCompTitle','Distance comparison — '+name);}
-  renderVehicleTable([veh]);renderBestPerfTable([veh]);setEl('eFlaggedTitle','Details — '+name);
+  eSelectionLabel='Details — '+name;renderVehicleTable([veh]);renderBestPerfTable([veh]);setEl('eFlaggedTitle',eSelectionLabel);
   eGenerateSummary([veh],name);
   eUpdateResetBtnVisibility();
 }
@@ -5700,7 +5685,7 @@ function eUpdateCompare(){
   if(eRiskChart){eRiskChart.data.labels=cmpRisk.map(function(v){return v.name;});eRiskChart.data.datasets[0].data=cmpRisk.map(function(v){return v.score;});eRiskChart.data.datasets[0].backgroundColor=cmpRisk.map(function(v){return v.color;});var cH=Math.max(120,cmpRisk.length*32+40);document.getElementById('eRiskWrap').style.height=cH+'px';document.getElementById('eRiskScroll').style.maxHeight=cH+'px';eRiskChart.update();eRiskChart.resize();}
   if(eViolChart){eViolChart.data.datasets[0].data=activeViolations.map(function(v){return eCompareSelected.reduce(function(s,nm){var vh=vehicles.find(function(x){return x.name===nm;})||{};return s+(vh[v.key]||0);},0);});eViolChart.update();}
   setEl('eViolTitle','Violations — '+eCompareSelected.length+' vehicles (combined)');
-  renderVehicleTable(selVeh);renderBestPerfTable(selVeh);setEl('eFlaggedTitle','Comparison — '+eCompareSelected.length+' vehicles');
+  eSelectionLabel='Comparison — '+eCompareSelected.length+' vehicles';renderVehicleTable(selVeh);renderBestPerfTable(selVeh);setEl('eFlaggedTitle',eSelectionLabel);
   eGenerateSummary(selVeh,'Comparison');
   eUpdateResetBtnVisibility();
 }
@@ -5736,6 +5721,7 @@ function eResetAllFilters(){
   eRiskSel='';eWdweSel='';eUtilSel='';ePrevSel='';eDistSel='';
   setDateDefaults();
   eClearVehicleSelectionUI();
+  eClearTableSelection(); /* Explicit reset clears selection — unlike fleet-mode switch which preserves it */
   eSetTableMode('flagged');
   eSetMode('fleet');
   eUpdateResetBtnVisibility();
@@ -5745,27 +5731,42 @@ function eResetAllFilters(){
 /* ══════════════════════════════════════════════════════════════════════════
  * TABLES
  * ══════════════════════════════════════════════════════════════════════════ */
-var eTableMode='flagged'; var eTableOverride=null;
+/* eTableMode        — 'flagged' or 'all' (the toggle buttons)
+   eTableOverride    — vehicles set by a selection (single vehicle / compare)
+   eSelectionContext — persists the selection so toggling All/Flagged and back restores it */
+var eTableMode='flagged'; var eTableOverride=null; var eSelectionContext=null; var eSelectionLabel='';
 function eSetTableMode(mode){
   eTableMode=mode;
-  eTableOverride=null;
+  /* Do NOT clear eSelectionContext — toggling All/Flagged should not lose the selection */
   var btnF=document.getElementById('eBtnFlaggedOnly');var btnA=document.getElementById('eBtnAllVehicles');
   if(btnF){btnF.style.background=mode==='flagged'?'var(--accent)':'transparent';btnF.style.color=mode==='flagged'?'#fff':'var(--text2)';btnF.style.borderColor=mode==='flagged'?'var(--accent)':'var(--border2)';}
   if(btnA){btnA.style.background=mode==='all'?'var(--accent)':'transparent';btnA.style.color=mode==='all'?'#fff':'var(--text2)';btnA.style.borderColor=mode==='all'?'var(--accent)':'var(--border2)';}
   eRenderVehicleTableBody();
 }
 function renderVehicleTable(overrideVehicles){
-  if(overrideVehicles)eTableOverride=overrideVehicles;
+  if(overrideVehicles){
+    eTableOverride=overrideVehicles;
+    eSelectionContext=overrideVehicles; /* remember selection so All/Flagged toggle can restore it */
+  }
   eRenderVehicleTableBody();
+}
+function eClearTableSelection(){
+  /* Called only when filter mode truly resets (back to whole fleet) */
+  eTableOverride=null;
+  eSelectionContext=null;
+  eSelectionLabel='';
 }
 function eRenderVehicleTableBody(){
   var tbody=document.getElementById('eAlertBody');if(!tbody)return;tbody.innerHTML='';
   var tableVehicles;
-  if(eTableOverride){
-    tableVehicles=eTableOverride;
-  }else if(eTableMode==='all'){
+  if(eTableMode==='all'){
+    /* Show all vehicles but still highlight that a selection is active */
     tableVehicles=[...vehicles].sort(function(a,b){return(b.score||0)-(a.score||0);});
     setEl('eFlaggedTitle','All vehicles ('+vehicles.length+')');
+  }else if(eSelectionContext){
+    /* Flagged mode with an active selection — show the selection, not generic flagged list */
+    tableVehicles=eSelectionContext;
+    setEl('eFlaggedTitle',eSelectionLabel||'Selected vehicles');
   }else{
     tableVehicles=flaggedVehicles;
     setEl('eFlaggedTitle','Vehicles Scoring');
@@ -5784,9 +5785,10 @@ function eRenderVehicleTableBody(){
     }
     var utilCells='<td>'+(v.daysActive!==undefined?v.daysActive:'—')+'</td><td>'+(v.daysIdle!==undefined?v.daysIdle:'—')+'</td><td>'+(v.weekdayDist!==undefined?Math.round(v.weekdayDist).toLocaleString():'—')+'</td><td>'+(v.weekendDist!==undefined?Math.round(v.weekendDist).toLocaleString():'—')+'</td>';
     var tr=document.createElement('tr');
-    var hasAnomaly=(v._warnings||[]).length>0;
-    if(hasAnomaly){tr.style.background='rgba(224,83,83,.07)';tr.style.outline='1px solid rgba(224,83,83,.25)';}
-    tr.innerHTML='<td>'+escHTML(v.name)+(hasAnomaly?' <span title="'+escHTML(v._warnings.map(function(w){return w.message;}).join(' | '))+'" style="color:#e05353;cursor:help;font-size:11px">⚠</span>':'')+'</td><td>'+Math.round(v.totalDist||0).toLocaleString()+'</td>'+distCell+'<td>'+score.toLocaleString()+'</td>'+changeCell+utilCells+activeViolations.map(function(vd){return'<td>'+(v[vd.key]||0).toLocaleString()+'</td>';}).join('')+'<td><span class="badge '+badgeCls+'">'+band.label+'</span></td>';
+    var extraKeys=[];vehicles.forEach(function(vh){Object.keys(vh._extra||{}).forEach(function(k){if(extraKeys.indexOf(k)===-1)extraKeys.push(k);});});
+    var extraCells=extraKeys.map(function(k){return'<td>'+escHTML(String(v._extra&&v._extra[k]!==undefined?v._extra[k]:'—'))+'</td>';}).join('');
+    tr.innerHTML='<td>'+escHTML(v.name)+'</td><td>'+Math.round(v.totalDist||0).toLocaleString()+'</td>'+distCell+'<td>'+score.toLocaleString()+'</td>'+changeCell+utilCells+activeViolations.map(function(vd){return'<td>'+(v[vd.key]||0).toLocaleString()+'</td>';}).join('')+extraCells+'<td><span class="badge '+badgeCls+'">'+band.label+'</span></td>';
+    tbody.appendChild(tr);
   });
 }
 function renderBestPerfTable(overrideVehicles){

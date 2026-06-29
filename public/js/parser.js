@@ -375,41 +375,40 @@ function buildVehicleMap(rows, cols) {
     }
 
     /* Violation counts — one property per violation type */
-    VIOLATIONS.forEach(v => {
-      map[name][v.key] = Number(row[cols[v.key]] || row[v.key] || row[v.short] || 0);
-    });
-  });
+      VIOLATIONS.forEach(v => {
+        map[name][v.key] = Number(row[cols[v.key]] || row[v.key] || row[v.short] || 0);
+      });
 
-  /* ── Violation anomaly detection ── */
-    /* Flags vehicles where one violation type is disproportionately high
-     * vs all others — signature of a sensor loop fault, not bad driving  */
-    map[name]._warnings = map[name]._warnings || [];
-    const violCounts = VIOLATIONS.map(v => map[name][v.key] || 0);
-    const totalViol  = violCounts.reduce((s, c) => s + c, 0);
-    const meanViol   = totalViol / (violCounts.length || 1);
+      /* ── Violation anomaly detection ── */
+      map[name]._warnings = map[name]._warnings || [];
+      const violCounts = VIOLATIONS.map(v => map[name][v.key] || 0);
+      const totalViol  = violCounts.reduce((s, c) => s + c, 0);
+      const meanViol   = totalViol / (violCounts.length || 1);
 
-    VIOLATIONS.forEach((v, i) => {
-      const count = violCounts[i];
-      if (count > 10000) {
-        map[name]._warnings.push({
-          type   : 'HARD_CAP',
-          field  : v.key,
-          count,
-          message: `${v.key}: ${count.toLocaleString()} events — exceeds physical possibility. Possible sensor loop or data corruption.`,
-        });
-      } else if (meanViol > 0 && count > meanViol * 15) {
-        map[name]._warnings.push({
-          type   : 'DISPROPORTIONATE',
-          field  : v.key,
-          count,
-          ratio  : Math.round(count / meanViol),
-          message: `${v.key}: ${count.toLocaleString()} events (${Math.round(count / meanViol)}× avg) — likely sensor fault, not driver behaviour.`,
-        });
-      }
-    });
+      VIOLATIONS.forEach((v, i) => {
+        const count = violCounts[i];
+        if (count > 10000) {
+          map[name]._warnings.push({
+            type   : 'HARD_CAP',
+            field  : v.key,
+            count,
+            message: `${v.key}: ${count.toLocaleString()} events — exceeds physical possibility. Possible sensor loop or data corruption.`,
+          });
+        } else if (meanViol > 0 && count > meanViol * 15) {
+          map[name]._warnings.push({
+            type   : 'DISPROPORTIONATE',
+            field  : v.key,
+            count,
+            ratio  : Math.round(count / meanViol),
+            message: `${v.key}: ${count.toLocaleString()} events (${Math.round(count / meanViol)}× avg) — likely sensor fault, not driver behaviour.`,
+          });
+        }
+      });
 
-  return map;
-}
+    });  // ← end rows.forEach
+
+    return map;
+  } 
 
 /**
  * buildPrevMap(prevRows, pCols)
